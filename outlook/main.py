@@ -132,6 +132,7 @@ def sendEmail(subject:str,content:str,receiver:str):
         return -9
     cnt=0
     while(isValid==True and access_token=='' and cnt<500):
+        cnt=cnt+1
         sleep(0.02)
     if(access_token==''):
         return -9
