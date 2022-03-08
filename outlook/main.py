@@ -12,12 +12,13 @@ FILE_NAME='.refresh_token_outlook_jtc_mxTIPBpWbIxrLvZr5CCYpRwfY7DLrQRTxYlxxBWWrg
 PASSWORD='mP#pKERIRoPcc@osaAYfnLPs#a7FDRSH7kXVgw5kckd'
 lastRefreshTime=0
 access_token=''
+isAppValid=None
 
 
 def keep(): # 持续刷新 refresh_token 和 access_token
-    global isValid,lastRefreshTime,refresh_token,access_token
+    global isValid,lastRefreshTime,refresh_token,access_token,app
     while True:
-        if(getTime()-lastRefreshTime<=30*60*1000 or isValid==False):
+        if(getTime()-lastRefreshTime<=30*60*1000 or isValid==False or app==None):
             sleep(1)
             continue
         try:
@@ -43,6 +44,17 @@ def keep(): # 持续刷新 refresh_token 和 access_token
 
 
 
+def setApp():
+    global app
+    while(app==None):
+        try:
+            app = ClientApplication(CID,client_credential=CREDENTIAL)
+        except:
+            app=None
+        sleep(2)
+    
+
+
 
 # ClientApplication(CID,client_credential=CREDENTIAL) 这一步需要较长时间, 这样可以避免初始化很多次, 节省时间
 try:
@@ -54,7 +66,9 @@ except:
     try:
         app = ClientApplication(CID,client_credential=CREDENTIAL)
     except:
+        app=None
         print("信息初始化错误, 请检查网络连接")
+        thread.start_new_thread(setApp,())
     try:
         f=open(path+'/'+FILE_NAME,'r')
         text=f.readline()
@@ -81,7 +95,10 @@ def getUrl():
 
 
 def setAccount(): # 设置账户，将 refresh_token 写入文件
-    global access_token,refresh_token,isValid,lastRefreshTime
+    global access_token,refresh_token,isValid,lastRefreshTime,app
+    if(app==None):
+        print('信息初始化错误, 请检查网络连接')
+        return
     url1=getUrl()
     if(url1==''):
         print("获取链接时出现错误")
@@ -105,13 +122,16 @@ def setAccount(): # 设置账户，将 refresh_token 写入文件
     refresh_token=ref_t
     isValid=True
     text=mySecrets.encrypt(refresh_token,PASSWORD)
+    flag=True
     try:
         f=open(path+'/'+FILE_NAME,'w')
         f.write(text)
         f.close()
     except:
+        flag=False
         print('写入文件失败, 发送邮件仅在本次运行时可直接使用, 下次运行时需重新登陆')
-    print('已成功将账号信息写入文件')
+    if(flag):
+        print('已成功将账号信息写入文件')
     lastRefreshTime=getTime()
     thread.start_new_thread(keep,())
     
@@ -127,7 +147,9 @@ def tmptest():
 
 def sendEmail(subject:str,content:str,receiver:str):
     # 返回值: -9: 账户信息错误 0: 发送成功, 其它小于 0 的值: 和myHttp相同
-    global refresh_token,isValid,access_token
+    global refresh_token,isValid,access_token,app
+    if(app==None):
+        return -8
     if(isValid==False):
         return -9
     cnt=0
