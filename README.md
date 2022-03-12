@@ -24,6 +24,12 @@ sendEmail(subject:str,content:str,receiver:str)
 
 Subject is the title of your email, receiver is the email address that you want to send this email to.
 
+Return value: int
+
+    0: success
+    -9: invalid account / no account
+    -1 ~ -4: same to myHttp  https://github.com/jtc1246/myHttp
+
 
 ## 4. Safety
 
