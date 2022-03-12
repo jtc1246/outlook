@@ -67,11 +67,12 @@ except:
         app = ClientApplication(CID,client_credential=CREDENTIAL)
     except:
         app=None
-        print("信息初始化错误, 请检查网络连接")
+        print("信息初始化错误, 请检查网络连接\nInformation initialization error, please check Internet connection.")
         thread.start_new_thread(setApp,())
     try:
         f=open(path+'/'+FILE_NAME,'r')
         text=f.readline()
+        f.close()
         refresh_token=mySecrets.decrypt(text,PASSWORD)
     except:
         refresh_token=''
@@ -97,17 +98,17 @@ def getUrl():
 def setAccount(): # 设置账户，将 refresh_token 写入文件
     global access_token,refresh_token,isValid,lastRefreshTime,app
     if(app==None):
-        print('信息初始化错误, 请检查网络连接')
+        print('信息初始化错误, 请检查网络连接\nInformation initialization error, please check Internet connection.')
         return
     url1=getUrl()
     if(url1==''):
-        print("获取链接时出现错误")
+        print("获取链接时出现错误\nThere iss an error when getting the link.")
         return
-    print("请在浏览器中打开以下链接, 登陆, 然后复制之后的链接")
+    print("请在浏览器中打开以下链接, 登陆, 然后复制之后的链接\nPlease open the following link in your browser, log in, and copy the link afterwards.")
     print(url1)
-    url2=input('请输入链接: ')
+    url2=input('请输入链接 / Please enter the link: ')
     if(url2.find('M.R3_BAY')==-1):
-        print('链接格式错误')
+        print('链接格式错误 / The format of link is incorrect.')
         return
     loc=url2.find('M.R3_BAY')
     authorization_code=url2[loc:]
@@ -116,7 +117,7 @@ def setAccount(): # 设置账户，将 refresh_token 写入文件
         acc_t=tokens['access_token']
         ref_t=tokens['refresh_token']
     except:
-        print('链接错误')
+        print('链接错误 / The link is incorrect.')
         return
     access_token=acc_t
     refresh_token=ref_t
@@ -129,9 +130,9 @@ def setAccount(): # 设置账户，将 refresh_token 写入文件
         f.close()
     except:
         flag=False
-        print('写入文件失败, 发送邮件仅在本次运行时可直接使用, 下次运行时需重新登陆')
+        print('写入文件失败, 发送邮件仅在本次运行时可直接使用, 下次运行时需重新登陆\nFail to write into files, sending emails can be directly used only in this time, and you need to log in again next time.')
     if(flag):
-        print('已成功将账号信息写入文件')
+        print('已成功将账号信息写入文件\nWrite account information into file successfully.')
     lastRefreshTime=getTime()
     thread.start_new_thread(keep,())
     
@@ -149,15 +150,17 @@ def sendEmail(subject:str,content:str,receiver:str):
     # 返回值: -9: 账户信息错误 0: 发送成功, 其它小于 0 的值: 和myHttp相同
     global refresh_token,isValid,access_token,app
     if(app==None):
-        return -8
+        return -1
     if(isValid==False):
         return -9
     cnt=0
     while(isValid==True and access_token=='' and cnt<500):
         cnt=cnt+1
         sleep(0.02)
-    if(access_token==''):
+    if(access_token=='' and isValid==False):
         return -9
+    if(access_token=='' and isValid==True):
+        return -1
     body={
         "message": {
             "subject": "SUBJECT ", # 修改为实际值
