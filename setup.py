@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='outlook',
-    version='1.0.0',
+    version='1.0.1',
     author='Tiancheng Jiao',
     author_email='jtc1246@outlook.com',
     url='https://github.com/jtc1246/outlook',
