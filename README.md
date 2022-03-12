@@ -1,4 +1,4 @@
-# Outlook v1.0.0
+# Outlook v1.0.1
 
 ## 1. Introduction
 
