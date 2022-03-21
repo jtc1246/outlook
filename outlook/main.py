@@ -3,7 +3,7 @@ from .others import *
 import _thread as thread
 import os,stat,mySecrets,time,myHttp
 from time import sleep
-
+import platform
 
 CID="683f9bc5-439e-4184-a668-e90972c1a1c0"
 CREDENTIAL='tS27Q~bcDRwYdFLF1aByIY1T_i4Tu24prW8j~'
@@ -13,6 +13,8 @@ PASSWORD='mP#pKERIRoPcc@osaAYfnLPs#a7FDRSH7kXVgw5kckd'
 lastRefreshTime=0
 access_token=''
 isAppValid=None
+isWindows=((platform.platform().find('indows'))>=0)
+slash={True:'\\',False:'/'}
 
 
 def keep(): # 持续刷新 refresh_token 和 access_token
@@ -36,7 +38,7 @@ def keep(): # 持续刷新 refresh_token 和 access_token
         lastRefreshTime=getTime()
         text=mySecrets.encrypt(refresh_token,PASSWORD)
         try:
-            f=open(path+'/'+FILE_NAME,'w')
+            f=open(path+slash[isWindows]+FILE_NAME,'w')
             f.write(text)
             f.close()
         except:
@@ -70,7 +72,7 @@ except:
         print("信息初始化错误, 请检查网络连接\nInformation initialization error, please check Internet connection.")
         thread.start_new_thread(setApp,())
     try:
-        f=open(path+'/'+FILE_NAME,'r')
+        f=open(path+slash[isWindows]+FILE_NAME,'r')
         text=f.readline()
         f.close()
         refresh_token=mySecrets.decrypt(text,PASSWORD)
@@ -125,7 +127,7 @@ def setAccount(): # 设置账户，将 refresh_token 写入文件
     text=mySecrets.encrypt(refresh_token,PASSWORD)
     flag=True
     try:
-        f=open(path+'/'+FILE_NAME,'w')
+        f=open(path+slash[isWindows]+FILE_NAME,'w')
         f.write(text)
         f.close()
     except:
