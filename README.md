@@ -28,6 +28,9 @@ Return value: int
 
     0: success
     -9: invalid account / no account
+    -10: fail to send email
+    -15: attachment file too large (the limit of attachment is just about 3M)
+    -20: cannot open or read file
     -1 ~ -4: same to myHttp  https://github.com/jtc1246/myHttp
 
 
