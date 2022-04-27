@@ -4,6 +4,11 @@ import _thread as thread
 import os,stat,mySecrets,time,myHttp
 from time import sleep
 import platform
+from myBasics import *
+from .exceptions import *
+
+
+
 
 CID="683f9bc5-439e-4184-a668-e90972c1a1c0"
 CREDENTIAL='tS27Q~bcDRwYdFLF1aByIY1T_i4Tu24prW8j~'
@@ -148,8 +153,36 @@ def tmptest():
 
 
 
-def sendEmail(subject:str,content:str,receiver:str):
-    # 返回值: -9: 账户信息错误 0: 发送成功, 其它小于 0 的值: 和myHttp相同
+def sendEmail(subject:str,content:str,receiver,attachment:list=[]):
+    # 返回值: -9: 账户错误, -10: 发送失败, -15: 附件大小超过上限 -20: 文件读取失败
+    # 0: 发送成功, 其它小于 0 的值: 和myHttp相同
+    if(type(receiver)!=type('') and type(receiver)!=type([])):
+        raise InputError('Type of receiver must be str or list.')
+    if(type(receiver)==type('')):
+        receiver=[receiver]
+    if(len(receiver)==0):
+        raise InputError('Number of receivers must be larger than 0.')
+    for r in receiver:
+        if(type(r)!=type('')):
+            raise InputError('Receivers must all be str.')
+    if(type(attachment)!=type([])):
+        raise InputError('Type of attachment must be list.')
+    newAttachment=[]
+    for att in attachment:
+        if(type(att)!=type([]) or len(att)!=2):
+            raise InputError('The presentation of one attachment must be a list and have a length 2.')
+        if(type(att[0])!=type('') or (type(att[1])!=type('') and type(att[1])!=type(b''))):
+            raise InputError('File name must be str and file must be str or bytes.')
+        if(type(att[1])==type(b'')):
+            newAttachment.append(att)
+            continue
+        try:
+            f=open(att[1],'rb')
+            b=f.read()
+            f.close()
+        except:
+            return -20
+        newAttachment.append([att[0],b])
     global refresh_token,isValid,access_token,app
     if(app==None):
         return -1
@@ -170,18 +203,28 @@ def sendEmail(subject:str,content:str,receiver:str):
                 "contentType": "Text",
                 "content": "CONTENT" # 修改为实际值
             },
-            "toRecipients": [
-            {
-                "emailAddress": {
-                "address": "RECEIVER" # 修改为实际值
-                }
-            }
-            ]
+            "toRecipients": [],
+            "attachments": []
         }
     }
     body["message"]["subject"]=subject
     body["message"]["body"]['content']=content
-    body["message"]['toRecipients'][0]['emailAddress']['address']=receiver
+    # body["message"]['toRecipients'][0]['emailAddress']['address']=receiver
+    for r in receiver:
+        r={
+            "emailAddress": {
+            "address": r
+            }
+        }
+        body['message']['toRecipients'].append(r)
+    for att in newAttachment:
+        a={
+            "@odata.type": "#microsoft.graph.fileAttachment",
+            "name": att[0],
+            "contentType": "text/plain",
+            "contentBytes": binToBase64(att[1])
+        }
+        body['message']['attachments'].append(a)
     body=json.dumps(body)
     header={
         'Authorization':'Bearer EwBwA8l6BAAUwihrrCrmQ4wuIJX5mbj7rQla6TUAAauo23t1xh4K+rrspbyI71HVnRZzS4lRTr+C8TpaKwl7/r7FWbMdIJSLfTFGCkiIzJ8Yx4mrZHxQFccwlt1nH5ehMdJh75Yo/PWRiuhMhAxtMdk5k3hzCqfP5j0O0O3F+hTdkGtZZmN2Ck1zIwNDaz2+/HMe0LEzdNhFrtj3nq9IaiAsC8cG6gB359CfF++ho2iXjqeZ+keH6ZiyCiqBQNJLym+eUkH6CC6CjT+UN06l22erg7/8lv62OrxMAAcuBNEbNvauaqQKn2zVfgu8Ra9hPuQtSTkWw2AO0qQ1a2EvPs4N7U0RyrNQLswiGDe63bxWPsXBbfojK0Xvj3RBo8P4gJ/R5mLEwQzUxBW0YAFwPrPmjb5liJBYYqzPgKDbIVh34KtQcXg1+6m0I8rRE0yRs3pZrM4CiP0zPRzRlyN/NeCudVwlzG3c9VzjbPRWUqqilVaRxDp+hiLxTz1n1p5t6IW0/fWhNIo0t47WHJqtRUySGi8dr/lxXMbp1IkOd6ryxdpbSTAmzAWcTzh1CftX9y/JuQ1PMq4WCJcHFRml2n9eGNtTJS09LLVo3v3XLJQ6f5wujRcs5sipjuPay4YdVIZIcUBvACXo7/cC5GRwanKRKEN7Ag==',
@@ -192,14 +235,18 @@ def sendEmail(subject:str,content:str,receiver:str):
     header['Content-Length']=len(body)
     header['Authorization']='Bearer '+access_token
     url='https://graph.microsoft.com/v1.0/me/sendMail'
-    r=myHttp.http(url,Method='POST',Header=header,Body=body)
+    r=myHttp.http(url,Method='POST',Header=header,Body=body,Timeout=2000+20000*len(newAttachment))
     status=r['status']
     code=r['code']
     if(status<=-1):
         return status
     if(code==202):
         return 0
-    return -9
+    if(code==401):
+        return -9
+    if(code==413):
+        return -15 # 附件大小超过上限
+    return -10
 
 
 
